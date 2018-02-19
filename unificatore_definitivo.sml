@@ -1,3 +1,4 @@
+(*DEFINIZIONE DEI DATATYPE*)
 datatype termine =
 	Var of string |
 	Fun of string* (termine list);
@@ -6,6 +7,7 @@ datatype equazione =
 	Eq of (termine*termine)|
 	Neq of (termine*termine);
 
+(*FUNZIONI PER LA STAMPA*)
 fun termineToString (Var(v)) = "Var("^v^")" |
 	termineToString (Fun(n,lista)) = n^"("^(listaToString lista)^")"
 and listaToString [] = "" |
@@ -17,8 +19,10 @@ fun equazioneToString (Eq(terminel,terminer)) = "Eq(" ^ (termineToString termine
 fun listaEquazioniToString [] = ""
    | listaEquazioniToString (h :: t) = equazioneToString h ^"," ^ listaEquazioniToString t;
 
+(*ECCEZIONE SE L'ALGORITMO FALLISCE*)
 exception noUnificatore of string;
 
+(*ALGORITMO DI UNIFICAZIONE*)
 fun term_reduction(l1: (termine list), l2: (termine list)): equazione list =
 	map (fn x => Eq(x)) (ListPair.zipEq (l1, l2));
 
@@ -45,7 +49,7 @@ fun unifica_elem (e: equazione, s1: equazione list):equazione list =
 		Eq(Var(v),Fun(s,tl)) => if (presente (v, Fun(s,tl))) then raise noUnificatore("No unificatore")
 								else (map (fn x => sostituisci_init(v,Fun(s,tl),x)) s1) @ [Neq(Var(v),Fun(s,tl))]|
 		Eq(Fun(s3,l3),Fun(s2,l2)) => if (s3=s2 andalso length l3 = length l2 ) 
-			then  (if (not (null l3)) then (term_reduction(l3,l2) @ s1) else [Eq(Fun(s3,l3),Fun(s2,l2))]@s1 ) else raise noUnificatore("No unificatore")|
+			then  (if (not (null l3)) then (term_reduction(l3,l2) @ s1) else (*[Eq(Fun(s3,l3),Fun(s2,l2))]@*)s1 ) else raise noUnificatore("No unificatore")|
 		Eq(Fun(s,tl),Var(v)) => [Eq(Var(v),Fun(s,tl))] @ s1;
 
 fun unifica(s: equazione list): equazione list =
@@ -54,17 +58,43 @@ fun unifica(s: equazione list): equazione list =
 	in 
 		if (s1 = s) then s1 else (unifica s1)
 	end;
+	
+(*TESTING*)
+val test1 = unifica [ Eq( Fun("arrow", [Fun("arrow", [Var("X"),Var("Y")]),Var("Z")]) ,
+						  Fun("arrow", [Var("W")                         ,Var("Z")])	)];
+print (listaEquazioniToString test1);
 
+val test2 = unifica [ Eq( Fun("arrow", [Var("x"),Fun("bool",[])]) ,
+						  Fun("arrow", [Fun("int",[]),Var("Y") ]) )]  ;
+print (listaEquazioniToString test2);
 
-val grande =  unifica [ Eq (  Fun("f",[Var("x1"),Fun("h",[Var("x1")]),Var("x2")]),   
-					 Fun("f",[Fun("g",[Var("x3")]),Var("x4"),Var("x3")])   )] ;
-print (listaEquazioniToString grande);
+val test3 = unifica [ Eq( Var("x"),
+						  Fun("arrow", [Var("Y"),Var("Z") ]) )]  ;
+print (listaEquazioniToString test3);
 
-val grandegrande = unifica [ Eq( Fun("g", [Var("x2")]), Var("x1")),     Eq( Fun("f", [Var("x1"), Fun("h",[Var("x1")]), Var("x2")]),  Fun("f", [Fun("g", [Var("x3")]), Var("x4"), Var("x3")]))];
+val test5 = unifica [ Eq( Fun("arrow", [Var("X"),Var("Y")]) ,
+						  Fun("arrow", [Var("Y"),Var("X")]) )]  ;
+print (listaEquazioniToString test5);
 
-print (listaEquazioniToString grandegrande);
-(*val gu1 = unifica_elem (hd grande, tl grande);
-val gu2 = unifica_elem (hd gu1, tl gu1);
-val gu3 = unifica_elem (hd gu2, tl gu2);*)
+val test6 = unifica [ Eq( Fun("arrow", [Var("X")     ,Fun("arrow", [Fun("bool",[]),Var("Y")])]) ,
+						  Fun("arrow", [Fun("int",[]),Fun("arrow", [Var("Z"),Var("Y")])]))];
+print (listaEquazioniToString test6);
 
-(*val piccolo = unifica [Eq(Var("x1"),Var("x2"))];*)
+val test7 = unifica [ Eq( Fun("arrow", [Var("C"),Fun("arrow",[Var("D"),Var("C")])]),
+						  Fun("arrow", [Fun("int",[]),Var("K")]) )];
+print (listaEquazioniToString test7);
+
+val test8 = unifica [ Eq( Var("x"),
+						  Fun("arrow", [Fun("int",[]),Fun("bool",[])]) )];
+print (listaEquazioniToString test8);
+
+val test9 = unifica [ Eq( Fun("arrow", [Var("A"),Fun("arrow",[Var("B"),Var("A")])]),
+						  Fun("arrow", [Var("D"),Fun("arrow",[Var("C"),Var("J")])]) )];
+print (listaEquazioniToString test9);
+
+val test10 = unifica [ Eq( Fun("arrow", [Var("X"), Fun("arrow", [Var("Y"), Var("X")])]), 
+						   Fun("arrow", [Var("Z"), Fun("arrow", [Var("Z"), Var("X")])]))];
+print (listaEquazioniToString test10);
+(*val test4 = unifica [ Eq( Var("X"),
+						  Fun("arrow", [Var("Y"),Var("X") ]) )]  ;
+print (listaEquazioniToString test4);*)
